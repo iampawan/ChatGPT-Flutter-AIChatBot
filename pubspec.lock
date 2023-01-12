@@ -69,10 +69,10 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "6bbaa0d6a1c47166b3baa0f464c842adcf63e0a6"
+      resolved-ref: "3e7ecf0dd83f11ae9dea026d023c73502324d87c"
       url: "https://github.com/iampawan/Flutter-ChatGPT.git"
     source: git
-    version: "1.0.1+2"
+    version: "1.0.2"
   checked_yaml:
     dependency: transitive
     description:
@@ -484,7 +484,7 @@ packages:
       name: xdg_directories
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.0+2"
+    version: "0.2.0+3"
   yaml:
     dependency: transitive
     description:

@@ -18,6 +18,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<ChatMessage> _messages = [];
   ChatGPT? chatGPT;
+  bool _isImageSearch = false;
 
   StreamSubscription? _subscription;
   bool _isTyping = false;
@@ -25,11 +26,14 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    chatGPT = ChatGPT.instance;
+    chatGPT = ChatGPT.instance.builder(
+      "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",
+    );
   }
 
   @override
   void dispose() {
+    chatGPT!.genImgClose();
     _subscription?.cancel();
     super.dispose();
   }
@@ -37,7 +41,12 @@ class _ChatScreenState extends State<ChatScreen> {
   // Link for api - https://beta.openai.com/account/api-keys
 
   void _sendMessage() {
-    ChatMessage message = ChatMessage(text: _controller.text, sender: "user");
+    if (_controller.text.isEmpty) return;
+    ChatMessage message = ChatMessage(
+      text: _controller.text,
+      sender: "user",
+      isImage: false,
+    );
 
     setState(() {
       _messages.insert(0, message);
@@ -46,22 +55,40 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _controller.clear();
 
-    final request = CompleteReq(
-        prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
+    if (_isImageSearch) {
+      final request = GenerateImage(message.text, 1, size: "256x256");
 
-    _subscription = chatGPT!
-        .builder("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",
-            orgId: "")
-        .onCompleteStream(request: request)
-        .listen((response) {
-      Vx.log(response!.choices[0].text);
-      ChatMessage botMessage =
-          ChatMessage(text: response.choices[0].text, sender: "bot");
-
-      setState(() {
-        _isTyping = false;
-        _messages.insert(0, botMessage);
+      _subscription = chatGPT!
+          .generateImageStream(request)
+          .asBroadcastStream()
+          .listen((response) {
+        Vx.log(response.data!.last!.url!);
+        insertNewData(response.data!.last!.url!, isImage: true);
       });
+    } else {
+      final request = CompleteReq(
+          prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
+
+      _subscription = chatGPT!
+          .onCompleteStream(request: request)
+          .asBroadcastStream()
+          .listen((response) {
+        Vx.log(response!.choices[0].text);
+        insertNewData(response.choices[0].text, isImage: false);
+      });
+    }
+  }
+
+  void insertNewData(String response, {bool isImage = false}) {
+    ChatMessage botMessage = ChatMessage(
+      text: response,
+      sender: "bot",
+      isImage: isImage,
+    );
+
+    setState(() {
+      _isTyping = false;
+      _messages.insert(0, botMessage);
     });
   }
 
@@ -72,13 +99,26 @@ class _ChatScreenState extends State<ChatScreen> {
           child: TextField(
             controller: _controller,
             onSubmitted: (value) => _sendMessage(),
-            decoration:
-                const InputDecoration.collapsed(hintText: "Send a message"),
+            decoration: const InputDecoration.collapsed(
+                hintText: "Question/description"),
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.send),
-          onPressed: () => _sendMessage(),
+        ButtonBar(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: () {
+                _isImageSearch = false;
+                _sendMessage();
+              },
+            ),
+            TextButton(
+                onPressed: () {
+                  _isImageSearch = true;
+                  _sendMessage();
+                },
+                child: const Text("Generate Image"))
+          ],
         ),
       ],
     ).px16();
@@ -87,7 +127,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text("ChatGPT Demo")),
+        appBar: AppBar(title: const Text("ChatGPT & Dall-E2 Demo")),
         body: SafeArea(
           child: Column(
             children: [
