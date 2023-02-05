@@ -55,12 +55,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _controller.clear();
 
-    if (_isImageSearch) {
+   if (_isImageSearch) {
       final request = GenerateImage(message.text, 1, size: "256x256");
 
       _subscription = chatGPT!
           .generateImageStream(request)
-          .asBroadcastStream()
+          .distinct()
+          .first
+          .asStream()
           .listen((response) {
         Vx.log(response.data!.last!.url!);
         insertNewData(response.data!.last!.url!, isImage: true);
@@ -68,13 +70,14 @@ class _ChatScreenState extends State<ChatScreen> {
     } else {
       final request = CompleteReq(
           prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
-
       _subscription = chatGPT!
           .onCompleteStream(request: request)
-          .asBroadcastStream()
+          .distinct()
+          .first
+          .asStream()
           .listen((response) {
-        Vx.log(response!.choices[0].text);
-        insertNewData(response.choices[0].text, isImage: false);
+        Vx.log(response!.choices.first.text);
+        insertNewData(response.choices.first.text, isImage: false);
       });
     }
   }
