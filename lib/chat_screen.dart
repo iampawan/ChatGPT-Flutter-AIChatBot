@@ -1,7 +1,6 @@
-import 'dart:async';
-
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:velocity_x/velocity_x.dart';
 
 import 'chatmessage.dart';
@@ -17,30 +16,29 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<ChatMessage> _messages = [];
-  ChatGPT? chatGPT;
+  late OpenAI? chatGPT;
   bool _isImageSearch = false;
 
-  StreamSubscription? _subscription;
   bool _isTyping = false;
 
   @override
   void initState() {
+    chatGPT = OpenAI.instance.build(
+        token: dotenv.env["API_KEY"],
+        baseOption: HttpSetup(receiveTimeout: 60000));
     super.initState();
-    chatGPT = ChatGPT.instance.builder(
-      "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",
-    );
   }
 
   @override
   void dispose() {
-    chatGPT!.genImgClose();
-    _subscription?.cancel();
+    chatGPT?.close();
+    chatGPT?.genImgClose();
     super.dispose();
   }
 
   // Link for api - https://beta.openai.com/account/api-keys
 
-  void _sendMessage() {
+  void _sendMessage() async {
     if (_controller.text.isEmpty) return;
     ChatMessage message = ChatMessage(
       text: _controller.text,
@@ -58,24 +56,16 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_isImageSearch) {
       final request = GenerateImage(message.text, 1, size: "256x256");
 
-      _subscription = chatGPT!
-          .generateImageStream(request)
-          .asBroadcastStream()
-          .listen((response) {
-        Vx.log(response.data!.last!.url!);
-        insertNewData(response.data!.last!.url!, isImage: true);
-      });
+      final response = await chatGPT!.generateImage(request);
+      Vx.log(response!.data!.last!.url!);
+      insertNewData(response.data!.last!.url!, isImage: true);
     } else {
-      final request = CompleteReq(
-          prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
+      final request =
+          CompleteText(prompt: message.text, model: kTranslateModelV3);
 
-      _subscription = chatGPT!
-          .onCompleteStream(request: request)
-          .asBroadcastStream()
-          .listen((response) {
-        Vx.log(response!.choices[0].text);
-        insertNewData(response.choices[0].text, isImage: false);
-      });
+      final response = await chatGPT!.onCompleteText(request: request);
+      Vx.log(response!.choices[0].text);
+      insertNewData(response.choices[0].text, isImage: false);
     }
   }
 
