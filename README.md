@@ -26,10 +26,11 @@ A Chatbot chat app built using the Flutter framework and OpenAI's GPT-3 language
 
 ## Getting Started
 
-1. Clone the repository
-2. Run `flutter pub get` to install dependencies
-3. Replace the placeholder API key with your own in the `chat_screen.dart` file
-4. Run the app on an emulator or physical device
+1. Clone the repository.
+2. Run `flutter pub get` to install dependencies.
+3. Create a '.env' file in your lib folder, and assign the variable API_KEY in it to your own API key.
+4. Specify the path to your '.env' file in the assets in the 'pubspec.yaml' file, and in the main function when loading the '.env' file.
+5. Run the app on an emulator or a physical device.
 
 The chatbot can be further customized to fit your use-case by modifying the code in the `main.dart` file and other files. The source code for the chatbot is available on GitHub.
 

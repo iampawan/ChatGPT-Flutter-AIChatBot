@@ -25,16 +25,16 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     chatGPT = OpenAI.instance.build(
         token: dotenv.env["API_KEY"],
-        baseOption: HttpSetup(receiveTimeout: 60000));
+        baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 6000)));
     super.initState();
   }
 
-  @override
-  void dispose() {
-    chatGPT?.close();
-    chatGPT?.genImgClose();
-    super.dispose();
-  }
+  // @override
+  // void dispose() {
+  //   chatGPT?.close();
+  //   chatGPT?.genImgClose();
+  //   super.dispose();
+  // }
 
   // Link for api - https://beta.openai.com/account/api-keys
 
@@ -54,19 +54,37 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.clear();
 
     if (_isImageSearch) {
-      final request = GenerateImage(message.text, 1, size: "256x256");
+      final request = GenerateImage(message.text, 1, size: ImageSize.size256);
 
       final response = await chatGPT!.generateImage(request);
       Vx.log(response!.data!.last!.url!);
       insertNewData(response.data!.last!.url!, isImage: true);
     } else {
-      final request =
-          CompleteText(prompt: message.text, model: kTranslateModelV3);
-
-      final response = await chatGPT!.onCompleteText(request: request);
-      Vx.log(response!.choices[0].text);
-      insertNewData(response.choices[0].text, isImage: false);
+      final response = await _chooseModel(message.text, Model.textDavinci3);
+      Vx.log(response);
+      insertNewData(response, isImage: false);
     }
+  }
+
+  Future<String> _chooseModel(String message, model) async {
+    final String resultMessage;
+    if (model is Model) {
+      final request = CompleteText(prompt: message, model: model);
+
+      final response = await chatGPT!.onCompletion(request: request);
+      resultMessage = response!.choices[0].text;
+    } else if (model is ChatModel) {
+      final request = ChatCompleteText(messages: [
+        Map.of({"role": "user", "content": message})
+      ], model: model);
+
+      final response = await chatGPT!.onChatCompletion(request: request);
+      resultMessage = response!.choices[0].message!.content;
+    } else {
+      throw ArgumentError('Invalid model type. Must be Model or ChatModel.');
+    }
+    Vx.log('Used the model: $model');
+    return resultMessage;
   }
 
   void insertNewData(String response, {bool isImage = false}) {
