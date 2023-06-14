@@ -17,7 +17,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<ChatMessage> _messages = [];
-  ChatGPT? chatGPT;
+  OpenAI? chatGPT;
 
   StreamSubscription? _subscription;
   bool _isTyping = false;
@@ -25,7 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    chatGPT = ChatGPT.instance;
+    chatGPT = OpenAI.instance;
   }
 
   @override
@@ -46,15 +46,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _controller.clear();
 
-    final request = CompleteReq(
-        prompt: message.text, model: kTranslateModelV3, max_tokens: 200);
+    final request = CompleteText(
+        prompt: message.text, model: TextDavinci3Model(), maxTokens: 200);
 
     _subscription = chatGPT!
-        .builder("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",
-            orgId: "")
-        .onCompleteStream(request: request)
+        .build(
+            token: "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",
+            baseOption: HttpSetup(receiveTimeout: const Duration(seconds: 5)),
+            enableLog: true)
+        .onCompletionSSE(request: request)
         .listen((response) {
-      Vx.log(response!.choices[0].text);
+      Vx.log(response.choices[0].text);
       ChatMessage botMessage =
           ChatMessage(text: response.choices[0].text, sender: "bot");
 
@@ -87,7 +89,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text("ChatGPT Demo")),
+        appBar: AppBar(title: const Text("OpenAI Demo")),
         body: SafeArea(
           child: Column(
             children: [
