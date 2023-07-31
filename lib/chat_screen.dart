@@ -1,3 +1,4 @@
+import 'package:chat_gpt_02/string_app.dart';
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -42,7 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_controller.text.isEmpty) return;
     ChatMessage message = ChatMessage(
       text: _controller.text,
-      sender: "user",
+      sender: ChatStrings.senderName,
       isImage: false,
     );
 
@@ -72,7 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void insertNewData(String response, {bool isImage = false}) {
     ChatMessage botMessage = ChatMessage(
       text: response,
-      sender: "bot",
+      sender: ChatStrings.botName,
       isImage: isImage,
     );
 
@@ -83,6 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildTextComposer() {
+
     return Row(
       children: [
         Expanded(
@@ -90,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
             controller: _controller,
             onSubmitted: (value) => _sendMessage(),
             decoration: const InputDecoration.collapsed(
-                hintText: "Question/description"),
+                hintText: TextLabelStrings.hintTextValue),
           ),
         ),
         ButtonBar(
@@ -107,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   _isImageSearch = true;
                   _sendMessage();
                 },
-                child: const Text("Generate Image"))
+                child: const Text(TextLabelStrings.generateImage))
           ],
         ),
       ],
@@ -117,7 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text("ChatGPT & Dall-E2 Demo")),
+        appBar: AppBar(title: const Text(TextLabelStrings.appTitle)),
         body: SafeArea(
           child: Column(
             children: [
